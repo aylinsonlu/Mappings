@@ -21,12 +21,20 @@ universal = {
     "GGU":"G", "GGC":"G", "GGA":"G", "GGG":"G"
     }
 
+def longest_substring_divisible_by_3(s):
+    remainder = len(s) % 3 
+    length_divisible_by_three = len(s) - remainder 
+    return s[:length_divisible_by_three]
+
 
 def translate(codon):
+    
     aa = ''
     codon = codon.upper()
-    dictkey=codon.replace("T","U")
-    aa+=universal[dictkey]
+    if len(codon) == 3:
+        dictkey=codon.replace("T","U")
+        aa+=universal[dictkey]
+
     return aa
 
 def calculate_cds_coordinates(gene_data):
@@ -54,19 +62,21 @@ def get_alt(cds, gene_data):
     for i in range(0, len(cds), 3):
         codon = cds[i:i+3]
         ref_aa = translate(codon)
-        for j in range(3):
-            ref_nuc = codon[j]
-            nuc_coordinate = cds_coordinates[i+j+1]
-            for nuc in ["A", "T", "C", "G"]:
-                if ref_nuc != nuc:
-                    alt_codon = codon[:j] + nuc + codon[j+1:]
-                    alt_aa = translate(alt_codon)
-                    key = (i//3, j, ref_nuc, nuc)
-                    subs_dict[key] = {
-                        'coordinate': nuc_coordinate,
-                        'ref_aa': ref_aa,
-                        'alt_aa': alt_aa
-                    }
+        if len(codon) == 3:
+            for j in range(3):
+                ref_nuc = codon[j]
+                nuc_coordinate = cds_coordinates[i+j+1]
+                for nuc in ["A", "T", "C", "G"]:
+                    if ref_nuc != nuc:
+                        alt_codon = codon[:j] + nuc + codon[j+1:]
+                        alt_aa = translate(alt_codon)
+                        key = (i//3, j, ref_nuc, nuc)
+                        subs_dict[key] = {
+                            'coordinate': nuc_coordinate,
+                            'ref_aa': ref_aa,
+                            'alt_aa': alt_aa
+                        }
+                        
     return subs_dict
 
 file_path = 'exceptional_canonical_transcripts.json'
@@ -77,6 +87,7 @@ with open(file_path, 'r') as file:
 all_substitutions_dict = {}
 
 for transcript in data.keys():
+    all_substitutions_dict[transcript] = {}
     cds = ""
     exon_coordinates_dict = calculate_cds_coordinates(data[transcript])
     chrm = data[transcript]['chrm']
@@ -91,8 +102,7 @@ for transcript in data.keys():
     all_substitutions_dict[transcript]['cds'] = cds
     all_substitutions_dict[transcript]['all_subs'] = subs_dict
 
-
-with open("exceptional_all_substitutions.csv", 'w', newline='') as csvfile:
+with open("excep_all_substitutions.csv", 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(['transcript', 'chrm', 'strand','protein_id','ref_nuc','coordinate','alt_nuc','ref_aa','alt_aa'])
     for transcript in all_substitutions_dict.keys():
